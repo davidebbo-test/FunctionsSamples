@@ -5,6 +5,15 @@
     "siteName":{
       "type":"string"
     },
+    "location":{
+      "type":"string",
+      "allowedValues":[
+        "westus",
+        "westeurope",
+        "southeastasia"
+      ],
+      "defaultValue":"0"
+    },
     "repoUrl": {
       "type": "string"
     },
@@ -13,7 +22,6 @@
     }
   },
   "variables": {
-    "location": "[resourceGroup().location]",
     "storageAccountName": "[toLower(parameters('siteName'))]",
     "storageAccountType": "Standard_LRS",
     "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
@@ -23,7 +31,7 @@
       "type": "Microsoft.Storage/storageAccounts",
       "name": "[variables('storageAccountName')]",
       "apiVersion": "2015-05-01-preview",
-      "location": "[variables('location')]",
+      "location": "[parameters('location')]",
       "properties": {
         "accountType": "[variables('storageAccountType')]"
       }
@@ -33,7 +41,7 @@
       "name":"[parameters('siteName')]",
       "type":"Microsoft.Web/sites",
       "kind": "functionapp",
-      "location":"[variables('location')]",
+      "location":"[parameters('location')]",
       "dependsOn":[
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
       ],
