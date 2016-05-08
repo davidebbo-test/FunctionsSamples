@@ -11,8 +11,7 @@
         "westus",
         "westeurope",
         "southeastasia"
-      ],
-      "defaultValue":"0"
+      ]
     },
     "repoUrl": {
       "type": "string"
@@ -46,29 +45,39 @@
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
       ],
       "properties": {
-        "siteConfig": {
-          "appSettings": [
-            { "name": "AzureWebJobsStorage", "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]" },
-            { "name": "AzureWebJobsDashboard", "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]" },
-            { "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING", "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]" },
-            { "name": "AZUREJOBS_EXTENSION_VERSION", "value": "beta" },
-            { "name": "FUNCTIONS_EXTENSION_VERSION", "value": "~0.2" }
-          ]
-        }
       },
-      "resources": [{
-        "apiVersion": "2015-08-01",
-        "name": "web",
-        "type": "sourcecontrols",
-        "dependsOn": [
-          "[resourceId('Microsoft.Web/Sites', parameters('siteName'))]"
-        ],
-        "properties": {
-          "RepoUrl": "[parameters('repoUrl')]",
-          "branch": "[parameters('branch')]",
-          "IsManualIntegration": true
+      "resources": [
+        {
+          "apiVersion": "2015-08-01",
+          "name": "appsettings",
+          "type": "config",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', parameters('siteName'))]",
+            "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+          ],
+          "properties": {
+            "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]",
+            "AzureWebJobsDashboard": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]",
+            "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]",
+            "AZUREJOBS_EXTENSION_VERSION": "beta",
+            "FUNCTIONS_EXTENSION_VERSION": "~0.2"
+          }
+        },
+        {
+          "apiVersion": "2015-08-01",
+          "name": "web",
+          "type": "sourcecontrols",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', parameters('siteName'))]",
+            "[resourceId('Microsoft.Web/Sites/config', parameters('siteName'), 'appsettings')]"
+          ],
+          "properties": {
+            "RepoUrl": "[parameters('repoUrl')]",
+            "branch": "[parameters('branch')]",
+            "IsManualIntegration": true
+          }
         }
-      }]
+      ]
     }
   ]
 }
