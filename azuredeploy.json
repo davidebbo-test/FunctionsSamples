@@ -5,22 +5,19 @@
     "siteName":{
       "type":"string"
     },
-    "location":{
-      "type":"string",
-      "allowedValues":[
-        "westus",
-        "westeurope",
-        "southeastasia"
-      ]
+    "siteLocation":{
+      "type":"string"
     },
     "repoUrl": {
       "type": "string"
     },
     "branch": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "master"
     }
   },
   "variables": {
+    "hostingPlanName": "[parameters('siteName')]",
     "storageAccountName": "[toLower(parameters('siteName'))]",
     "storageAccountType": "Standard_LRS",
     "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
@@ -30,29 +27,54 @@
       "type": "Microsoft.Storage/storageAccounts",
       "name": "[variables('storageAccountName')]",
       "apiVersion": "2015-05-01-preview",
-      "location": "[parameters('location')]",
+      "location": "[parameters('siteLocation')]",
       "properties": {
         "accountType": "[variables('storageAccountType')]"
+      }
+    },
+    {
+      "apiVersion": "2015-08-01",
+      "name": "[variables('hostingPlanName')]",
+      "type": "Microsoft.Web/serverFarms",
+      "location": "[parameters('siteLocation')]",
+      "properties": {
+      },
+      "sku": {
+        "name": "Y1"
       }
     },
     {
       "apiVersion":"2015-08-01",
       "name":"[parameters('siteName')]",
       "type":"Microsoft.Web/sites",
-      "kind": "functionapp",
-      "location":"[parameters('location')]",
-      "dependsOn":[
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverFarms', variables('hostingPlanName'))]"
       ],
+      "kind": "functionapp",
+      "location":"[parameters('siteLocation')]",
       "properties": {
       },
       "resources": [
+        {
+          "apiVersion": "2015-08-01",
+          "name": "web",
+          "type": "sourcecontrols",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', parameters('siteName'))]"
+          ],
+          "properties": {
+            "RepoUrl": "[parameters('repoUrl')]",
+            "branch": "[parameters('branch')]",
+            "IsManualIntegration": true
+          }
+        },
         {
           "apiVersion": "2015-08-01",
           "name": "appsettings",
           "type": "config",
           "dependsOn": [
             "[resourceId('Microsoft.Web/Sites', parameters('siteName'))]",
+            "[resourceId('Microsoft.Web/Sites/sourcecontrols', parameters('siteName'), 'web')]",
             "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
           ],
           "properties": {
@@ -60,21 +82,7 @@
             "AzureWebJobsDashboard": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]",
             "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]",
             "AZUREJOBS_EXTENSION_VERSION": "beta",
-            "FUNCTIONS_EXTENSION_VERSION": "~0.2"
-          }
-        },
-        {
-          "apiVersion": "2015-08-01",
-          "name": "web",
-          "type": "sourcecontrols",
-          "dependsOn": [
-            "[resourceId('Microsoft.Web/Sites', parameters('siteName'))]",
-            "[resourceId('Microsoft.Web/Sites/config', parameters('siteName'), 'appsettings')]"
-          ],
-          "properties": {
-            "RepoUrl": "[parameters('repoUrl')]",
-            "branch": "[parameters('branch')]",
-            "IsManualIntegration": true
+            "FUNCTIONS_EXTENSION_VERSION": "~0.6"
           }
         }
       ]
